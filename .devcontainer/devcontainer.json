@@ -1,0 +1,28 @@
+// devcontainer.json
+{
+    "name": "RLlib Development Container",
+    "dockerFile": "Dockerfile",
+    "forwardPorts": [6006],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "mechatroner.rainbow-csv"
+            ]
+        }
+    },
+    "workspaceFolder": "/workspaces/raylib_test",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspaces/raylib_test,type=bind",
+    "containerEnv": {
+      "DISPLAY": "unix:0",
+    },
+    "mounts": [
+      "source=/tmp/.X11-unix,target=/tmp/.X11-unix,type=bind,consistency=cached",
+      "source=/home/jonas/projects/git/raylib_test/user/jonas,target=/home/jonas,type=bind,consistency=cached",
+    ],
+    "runArgs": [
+      "--gpus", "all",
+      "--shm-size=10.24gb"
+    ]
+  }
+  
