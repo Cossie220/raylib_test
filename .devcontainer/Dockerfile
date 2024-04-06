@@ -28,6 +28,7 @@ RUN apt-get update \
         libgl1-mesa-glx \
         x11-xserver-utils \
         x11-apps \
+        libx264-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install PyTorch and TensorFlow
@@ -38,7 +39,17 @@ RUN pip install --no-cache-dir \
 RUN pip install --no-cache-dir \
         ray[rllib]
 
-RUN pip install wandb
+RUN pip install wandb \
+                loguru \
+                gymnasium[classic-control] \
+                ipykernel \
+                ipywidgets
+
+RUN pip install moviepy \
+                imageio \
+                opencv-python
+
+RUN apt-get install -y libx265-dev
 
 # Set up non-root user
 RUN groupadd -r jonas && useradd -r -g jonas -m -s /bin/bash jonas
