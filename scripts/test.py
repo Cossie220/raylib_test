@@ -1,5 +1,9 @@
-from ray.rllib.algorithms.ppo import PPOConfig, PPO
+from ray.rllib.algorithms.ppo.ppo import PPOConfig
 from ray.rllib.algorithms.dqn import DQNConfig
+from ray.rllib.algorithms.a3c import A3CConfig
+from ray.rllib.algorithms.a2c.a2c import A2CConfig
+from ray.rllib.algorithms.sac.sac import SACConfig
+
 from ray.rllib.algorithms import Algorithm
 from ray.tune.logger import pretty_print
 
@@ -8,14 +12,15 @@ import gymnasium as gym
 import numpy as np
 import cv2
 
-import wandb
+from clearml import Task, Logger
 from loguru import logger
 
-ENV = "MountainCar-v0"
+ENV = "MountainCarContinuous-v0"
 SIZE = (600, 400)
+MAX_EPOCHS = 12000
 
 
-def render_model(algorithm: Algorithm):
+def render_model(algorithm: Algorithm, iteration: int):
     result = cv2.VideoWriter('test.webm',  
                             cv2.VideoWriter_fourcc(*'VP90'), 
                             50, SIZE) 
@@ -28,7 +33,7 @@ def render_model(algorithm: Algorithm):
 
     frames = []
     image = None
-
+    algorithm.evaluate
     for i in range(1000):
         action = algorithm.compute_single_action(
             observation=obs,
@@ -47,37 +52,41 @@ def render_model(algorithm: Algorithm):
 
     result.release()
 
-    wandb.log({"video": wandb.Video("test.webm", format="mp4")})
+    Logger.current_logger().report_media(
+        title='autoput', 
+        series='tada', 
+        iteration=iteration,
+        local_path="test.webm"
+    )
 
 
 def main():
-    wandb.init(
+    Task.init(
         # set the wandb project where this run will be logged
-        project="ray_test",
-        sync_tensorboard=True
+        project_name="test_project/gym_enviroments", task_name='SAC'
     )
 
     algo = (
-        DQNConfig()
+        SACConfig()
         .rollouts(num_rollout_workers=8)
         .resources(num_gpus=0)
+        .training()
         .environment(env=ENV)
         .build()
     )
 
     logger.info("starting training")
 
-    for i in range(120):
+    for i in range(MAX_EPOCHS):
         logger.info(f"training step {i}")
         result = algo.train()
         if i % 5 == 0:
             checkpoint_dir = algo.save().checkpoint.path
             logger.debug(f"Checkpoint saved in directory {checkpoint_dir}")
-            render_model(algo)
+            render_model(algo, i)
 
     logger.success(f"succesfully trained network")
-    render_model(algo)
-    wandb.finish()
+    render_model(algo, MAX_EPOCHS)
 
 if __name__ == "__main__":
     main()

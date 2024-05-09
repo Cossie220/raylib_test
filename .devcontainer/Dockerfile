@@ -42,6 +42,7 @@ RUN pip install --no-cache-dir \
 RUN pip install wandb \
                 loguru \
                 gymnasium[classic-control] \
+                gymnasium[box2d] \
                 ipykernel \
                 ipywidgets
 
@@ -49,7 +50,7 @@ RUN pip install moviepy \
                 imageio \
                 opencv-python
 
-RUN apt-get install -y libx265-dev
+RUN pip install clearml
 
 # Set up non-root user
 RUN groupadd -r jonas && useradd -r -g jonas -m -s /bin/bash jonas

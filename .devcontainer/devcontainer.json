@@ -24,7 +24,8 @@
     ],
     "runArgs": [
       "--gpus", "all",
-      "--shm-size=10.24gb"
+      "--shm-size=10.24gb",
+      "--network=host",
     ]
   }
   
