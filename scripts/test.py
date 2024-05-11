@@ -1,3 +1,10 @@
+import sys
+import os
+
+sys.path.append(os.getcwd())
+
+from custom_enviroments.snake import SnekEnv
+
 from ray.rllib.algorithms.ppo.ppo import PPOConfig
 from ray.rllib.algorithms.dqn import DQNConfig
 from ray.rllib.algorithms.a3c import A3CConfig
@@ -15,8 +22,8 @@ import cv2
 from clearml import Task, Logger
 from loguru import logger
 
-ENV = "MountainCarContinuous-v0"
-SIZE = (600, 400)
+ENV = SnekEnv
+SIZE = (500, 500)
 MAX_EPOCHS = 12000
 
 
@@ -25,7 +32,7 @@ def render_model(algorithm: Algorithm, iteration: int):
                             cv2.VideoWriter_fourcc(*'VP90'), 
                             50, SIZE) 
 
-    env = gym.make(ENV, render_mode="rgb_array")
+    env = ENV()
 
     obs, info = env.reset()
 
@@ -37,12 +44,11 @@ def render_model(algorithm: Algorithm, iteration: int):
     for i in range(1000):
         action = algorithm.compute_single_action(
             observation=obs,
-            explore=False
         )
         obs, reward, done, truncated, _ = env.step(action)
         image = env.render()
         
-        image_array = np.asanyarray(image, dtype=np.uint8).reshape(400 ,600 ,3)
+        image_array = np.asanyarray(image, dtype=np.uint8).reshape(500 ,500 ,3)
         result.write(image_array)
         frames.append(image_array)
 
@@ -63,12 +69,12 @@ def render_model(algorithm: Algorithm, iteration: int):
 def main():
     Task.init(
         # set the wandb project where this run will be logged
-        project_name="test_project/gym_enviroments", task_name='SAC'
+        project_name="test_project/gym_enviroments", task_name='Snake_PPO'
     )
 
     algo = (
-        SACConfig()
-        .rollouts(num_rollout_workers=8)
+        PPOConfig()
+        .rollouts(num_rollout_workers=12)
         .resources(num_gpus=0)
         .training()
         .environment(env=ENV)

@@ -29,7 +29,7 @@ def collision_with_self(snake_position):
 
 class SnekEnv(gym.Env):
 
-	def __init__(self):
+	def __init__(self,  render_mode=None, size=5):
 		super(SnekEnv, self).__init__()
 		# Define action and observation space
 		# They must be gym.spaces objects
@@ -41,8 +41,8 @@ class SnekEnv(gym.Env):
 
 	def step(self, action):
 		self.prev_actions.append(action)
-		cv2.imshow('a',self.img)
-		cv2.waitKey(1)
+		# cv2.imshow('a',self.img) 
+		# cv2.waitKey(1)
 		self.img = np.zeros((500,500,3),dtype='uint8')
 		# Display Apple
 		cv2.rectangle(self.img,(self.apple_position[0],self.apple_position[1]),(self.apple_position[0]+10,self.apple_position[1]+10),(0,0,255),3)
@@ -50,14 +50,6 @@ class SnekEnv(gym.Env):
 		for position in self.snake_position:
 			cv2.rectangle(self.img,(position[0],position[1]),(position[0]+10,position[1]+10),(0,255,0),3)
 		
-		# Takes step after fixed time
-		t_end = time.time() + 0.05
-		k = -1
-		while time.time() < t_end:
-			if k == -1:
-				k = cv2.waitKey(1)
-			else:
-				continue
 
 		button_direction = action
 		# Change the head position based on the button direction
@@ -70,10 +62,12 @@ class SnekEnv(gym.Env):
 		elif button_direction == 3:
 			self.snake_head[1] -= 10
 
+		apple_reward = 0
 		# Increase Snake length on eating apple
 		if self.snake_head == self.apple_position:
 			self.apple_position, self.score = collision_with_apple(self.apple_position, self.score)
 			self.snake_position.insert(0,list(self.snake_head))
+			apple_reward = 10000
 
 		else:
 			self.snake_position.insert(0,list(self.snake_head))
@@ -84,10 +78,13 @@ class SnekEnv(gym.Env):
 			font = cv2.FONT_HERSHEY_SIMPLEX
 			self.img = np.zeros((500,500,3),dtype='uint8')
 			cv2.putText(self.img,'Your Score is {}'.format(self.score),(140,250), font, 1,(255,255,255),2,cv2.LINE_AA)
-			cv2.imshow('a',self.img)
+			# cv2.imshow('a',self.img)
 			self.done = True
 
-		self.total_reward = len(self.snake_position) - 3  # default length is 3
+		euclidean_dist_to_apple = np.linalg.norm(np.array(self.snake_head) - np.array(self.apple_position))
+
+		self.total_reward = ((250 - euclidean_dist_to_apple) + apple_reward)/100
+	
 		self.reward = self.total_reward - self.prev_reward
 		self.prev_reward = self.total_reward
 
@@ -108,9 +105,12 @@ class SnekEnv(gym.Env):
 		observation = [head_x, head_y, apple_delta_x, apple_delta_y, snake_length] + list(self.prev_actions)
 		observation = np.array(observation)
 
-		return observation, self.reward, self.done, info
+		return observation, self.reward, self.done, False, info
 
-	def reset(self):
+	def render(self):
+		return self.img
+
+	def reset(self, *, seed=None, options=None):
 		self.img = np.zeros((500,500,3),dtype='uint8')
 		# Initial Snake and Apple position
 		self.snake_position = [[250,250],[240,250],[230,250]]
@@ -138,6 +138,7 @@ class SnekEnv(gym.Env):
 		# create observation:
 		observation = [head_x, head_y, apple_delta_x, apple_delta_y, snake_length] + list(self.prev_actions)
 		observation = np.array(observation)
+		info = {}
 
-		return observation
+		return observation, info
 
