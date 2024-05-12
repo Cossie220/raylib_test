@@ -69,14 +69,15 @@ def render_model(algorithm: Algorithm, iteration: int):
 def main():
     Task.init(
         # set the wandb project where this run will be logged
-        project_name="test_project/gym_enviroments", task_name='Snake_PPO'
+        project_name="test_project/gym_enviroments",
+        reuse_last_task_id=False
     )
 
     algo = (
-        PPOConfig()
+        DQNConfig()
         .rollouts(num_rollout_workers=12)
         .resources(num_gpus=0)
-        .training()
+        .training(gamma=0.8, lr=0.00001)
         .environment(env=ENV)
         .build()
     )

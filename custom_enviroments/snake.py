@@ -36,8 +36,10 @@ class SnekEnv(gym.Env):
 		# Example when using discrete actions:
 		self.action_space = spaces.Discrete(4)
 		# Example for using image as input (channel-first; channel-last also works):
+		# self.observation_space = spaces.Box(low=-500, high=500,
+		# 									shape=(5+SNAKE_LEN_GOAL,), dtype=np.float32)
 		self.observation_space = spaces.Box(low=-500, high=500,
-											shape=(5+SNAKE_LEN_GOAL,), dtype=np.float32)
+									shape=(5+2*SNAKE_LEN_GOAL,), dtype=np.float32)
 
 	def step(self, action):
 		self.prev_actions.append(action)
@@ -67,7 +69,7 @@ class SnekEnv(gym.Env):
 		if self.snake_head == self.apple_position:
 			self.apple_position, self.score = collision_with_apple(self.apple_position, self.score)
 			self.snake_position.insert(0,list(self.snake_head))
-			apple_reward = 10000
+			apple_reward = 1000
 
 		else:
 			self.snake_position.insert(0,list(self.snake_head))
@@ -82,14 +84,13 @@ class SnekEnv(gym.Env):
 			self.done = True
 
 		euclidean_dist_to_apple = np.linalg.norm(np.array(self.snake_head) - np.array(self.apple_position))
+		
+		reward = 100/(1+euclidean_dist_to_apple)
 
-		self.total_reward = ((250 - euclidean_dist_to_apple) + apple_reward)/100
-	
-		self.reward = self.total_reward - self.prev_reward
-		self.prev_reward = self.total_reward
+		reward += apple_reward
 
 		if self.done:
-			self.reward = -10
+			reward = -1000
 		info = {}
 
 
@@ -101,11 +102,24 @@ class SnekEnv(gym.Env):
 		apple_delta_y = self.apple_position[1] - head_y
 
 		# create observation:
+		new_observation = []
 
-		observation = [head_x, head_y, apple_delta_x, apple_delta_y, snake_length] + list(self.prev_actions)
+		for position in self.snake_position:
+			new_observation.append(position[0])
+			new_observation.append(position[1])
+
+		for _ in range(2 + 2*SNAKE_LEN_GOAL - len(new_observation)):
+			new_observation.append(0)
+		new_observation.append(apple_delta_x)
+		new_observation.append(apple_delta_y)
+		new_observation.append(snake_length)
+
+		observation = [head_x, head_y, self.apple_position[0], self.apple_position[1], 0] + list(self.prev_actions)
 		observation = np.array(observation)
+		new_observation = np.array(new_observation)
+	
 
-		return observation, self.reward, self.done, False, info
+		return new_observation, reward, self.done, False, info
 
 	def render(self):
 		return self.img
@@ -135,10 +149,27 @@ class SnekEnv(gym.Env):
 		for i in range(SNAKE_LEN_GOAL):
 			self.prev_actions.append(-1) # to create history
 
+		new_observation = []
+
+		for position in self.snake_position:
+			new_observation.append(position[0])
+			new_observation.append(position[1])
+
+		for _ in range(2 + 2*SNAKE_LEN_GOAL - len(new_observation)):
+			new_observation.append(0)
+
+		new_observation.append(apple_delta_x)
+		new_observation.append(apple_delta_y)
+		new_observation.append(snake_length)
+		
+		observation = [head_x, head_y, apple_delta_x, apple_delta_y, snake_length] + list(self.prev_actions)
+		observation = np.array(observation)
+
 		# create observation:
 		observation = [head_x, head_y, apple_delta_x, apple_delta_y, snake_length] + list(self.prev_actions)
 		observation = np.array(observation)
 		info = {}
+		new_observation = np.array(new_observation)
 
-		return observation, info
+		return new_observation, info
 
